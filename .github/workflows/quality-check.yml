@@ -1,0 +1,66 @@
+name: Quality check
+
+on:
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: quality-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test-and-package:
+    name: Test and verify VSIX
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm test
+
+      - name: Build VSIX
+        run: npm run package -- --out extension.vsix
+
+      - name: Verify VSIX identity and contents
+        shell: bash
+        run: |
+          set -euo pipefail
+          unzip -p extension.vsix extension/package.json > /tmp/extension-package.json
+          node <<'NODE'
+          const manifest = require('/tmp/extension-package.json');
+          const expected = {
+            name: 'db-playground',
+            displayName: 'DB Playground',
+            publisher: 'beatahumeniuk',
+            version: require('./package.json').version,
+          };
+          for (const [key, value] of Object.entries(expected)) {
+            if (manifest[key] !== value) {
+              throw new Error(`${key} is ${manifest[key]}, expected ${value}`);
+            }
+          }
+          NODE
+
+          unexpected=$(unzip -Z1 extension.vsix | grep -E '(^|/)(\.env($|\.)|\.git/|\.github/|\.claude/|node_modules/|src/|test/|out-test/)|\.(pem|key|p12|pfx)$' || true)
+          if [ -n "$unexpected" ]; then
+            echo "Unexpected sensitive or development files in VSIX:"
+            echo "$unexpected"
+            exit 1
+          fi

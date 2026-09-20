@@ -1,0 +1,136 @@
+name: Publish extension
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: publish-marketplace
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Test, package and publish
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Check out main
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+
+      - name: Read version and check whether it is new
+        id: version
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [ ! -f package.json ]; then
+            echo "publish=false" >> "$GITHUB_OUTPUT"
+            echo "No manifest on main yet; the extension has not landed here."
+            exit 0
+          fi
+
+          version=$(node -p "require('./package.json').version")
+          tag="v${version}"
+          vsix="db-playground-${version}.vsix"
+
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "vsix=$vsix" >> "$GITHUB_OUTPUT"
+
+          if git rev-parse "$tag" >/dev/null 2>&1; then
+            echo "publish=false" >> "$GITHUB_OUTPUT"
+            echo "Version $version already has tag $tag; nothing will be published."
+          else
+            echo "publish=true" >> "$GITHUB_OUTPUT"
+            echo "Version $version is new and will be validated for publication."
+          fi
+
+      - name: Set up Node.js
+        if: steps.version.outputs.publish == 'true'
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install locked dependencies
+        if: steps.version.outputs.publish == 'true'
+        run: npm ci
+
+      - name: Run tests
+        if: steps.version.outputs.publish == 'true'
+        run: npm test
+
+      - name: Build final VSIX
+        if: steps.version.outputs.publish == 'true'
+        run: npm run package -- --out "${{ steps.version.outputs.vsix }}"
+
+      - name: Verify final VSIX
+        if: steps.version.outputs.publish == 'true'
+        env:
+          EXPECTED_VERSION: ${{ steps.version.outputs.version }}
+          VSIX: ${{ steps.version.outputs.vsix }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          unzip -p "$VSIX" extension/package.json > /tmp/extension-package.json
+          node <<'NODE'
+          const manifest = require('/tmp/extension-package.json');
+          const expected = {
+            name: 'db-playground',
+            displayName: 'DB Playground',
+            publisher: 'beatahumeniuk',
+            version: process.env.EXPECTED_VERSION,
+            repository: {
+              type: 'git',
+              url: 'https://github.com/Beata-Humeniuk/db-playground.git',
+            },
+          };
+          for (const [key, value] of Object.entries(expected)) {
+            if (JSON.stringify(manifest[key]) !== JSON.stringify(value)) {
+              throw new Error(`${key} does not match the expected release metadata`);
+            }
+          }
+          NODE
+
+          unexpected=$(unzip -Z1 "$VSIX" | grep -E '(^|/)(\.env($|\.)|\.git/|\.github/|\.claude/|node_modules/|src/|test/|out-test/)|\.(pem|key|p12|pfx)$' || true)
+          if [ -n "$unexpected" ]; then
+            echo "Unexpected sensitive or development files in VSIX:"
+            echo "$unexpected"
+            exit 1
+          fi
+
+      - name: Publish to Visual Studio Marketplace
+        if: steps.version.outputs.publish == 'true'
+        env:
+          VSCE_PAT: ${{ secrets.VSCE_PAT }}
+          VSIX: ${{ steps.version.outputs.vsix }}
+        run: npx --no-install vsce publish --packagePath "$VSIX"
+
+      - name: Create version tag
+        if: steps.version.outputs.publish == 'true'
+        env:
+          TAG: ${{ steps.version.outputs.tag }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "$TAG" -m "$TAG"
+          git push origin "$TAG"
+
+      - name: Create GitHub Release with the published VSIX
+        if: steps.version.outputs.publish == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.version.outputs.tag }}
+          VSIX: ${{ steps.version.outputs.vsix }}
+        run: gh release create "$TAG" "$VSIX" --verify-tag --generate-notes --title "$TAG"

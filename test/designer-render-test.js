@@ -65,7 +65,7 @@ function runPage(html) {
   const window = {
     addEventListener(type, fn) { if (type === 'message') onMessage = fn; },
   };
-  const script = html.split('<script>')[1].split('</script>')[0];
+  const script = html.match(/<script[^>]*>([\s\S]*?)<\/script>/)[1];
   const run = new Function('document', 'window', 'acquireVsCodeApi', script);
   run(document, window, () => ({ postMessage: (m) => messages.push(m) }));
   return {

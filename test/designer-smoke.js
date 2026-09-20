@@ -18,6 +18,10 @@ const html = buildDesignerHtml();
 assert(html.includes('<html lang="en">'), 'English base without a display language');
 assert(html.includes('Content-Security-Policy'), 'CSP present');
 assert(html.includes("default-src 'none'"), 'restrictive CSP');
+assert(!html.includes("'unsafe-inline'"), 'no unsafe-inline in the CSP');
+assert(/style-src 'nonce-[^']+'/.test(html) && /script-src 'nonce-[^']+'/.test(html), 'nonce-based CSP');
+const nonce = html.match(/script-src 'nonce-([^']+)'/)[1];
+assert(html.includes('<style nonce="' + nonce + '">') && html.includes('<script nonce="' + nonce + '">'), 'style and script carry the CSP nonce');
 assert(html.includes('acquireVsCodeApi'), 'webview API acquired');
 assert(html.includes('Database'), 'dialect picker label');
 assert(html.includes('Tables'), 'tables heading');
@@ -31,7 +35,9 @@ assert(!/value="[^"]*table1/.test(html), 'no auto-filled names');
 
 const foreignHtml = buildDesignerHtml('pl-PL');
 assert(foreignHtml.includes('<html lang="en">'), 'a foreign display language still renders English');
-assert(foreignHtml === html, 'the page does not depend on the display language');
+const withoutNonce = (page) => page.replace(/nonce-[^'"]+|nonce="[^"]+"/g, 'nonce');
+assert(withoutNonce(foreignHtml) === withoutNonce(html), 'the page does not depend on the display language');
+assert(foreignHtml !== html, 'every page gets its own nonce');
 assert(!/[ąćęłńóśźżĄĆĘŁŃÓŚŹŻ]/.test(html), 'no Polish text in the webview');
 assert(html.includes('"shape.tree":"Tree"') && html.includes('Diagram'), 'shape views offered');
 assert(html.includes('"zoom.fit":"Fit"'), 'diagram zoom controls');
@@ -56,10 +62,10 @@ const full = computePreviews(state, { scriptMode: 'full', queryId: null });
 assert(full.script.includes('CREATE TABLE users ('), 'full preview');
 
 const { savePlan } = require('../src/extension');
-const defaults = savePlan('habitino', {});
-assert(defaults.markdownDir === 'habitino-spec/db/model', 'default description dir, got ' + defaults.markdownDir);
-assert(defaults.schemaDir === 'habitino-spec/db/model', 'default bridge dir, got ' + defaults.schemaDir);
-const custom = savePlan('habitino', { modelFolder: 'docs-src/schemas' });
+const defaults = savePlan('shop', {});
+assert(defaults.markdownDir === 'shop-spec/db/model', 'default description dir, got ' + defaults.markdownDir);
+assert(defaults.schemaDir === 'shop-spec/db/model', 'default bridge dir, got ' + defaults.schemaDir);
+const custom = savePlan('shop', { modelFolder: 'docs-src/schemas' });
 assert(custom.markdownDir === 'docs-src/schemas', 'modelFolder steers the description');
 assert(custom.schemaDir === 'docs-src/schemas',
   'the bridge file follows modelFolder, got ' + custom.schemaDir);

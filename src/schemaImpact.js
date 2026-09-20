@@ -159,7 +159,7 @@ function impactReportMd(changes, impact, meta) {
   lines.push('');
   lines.push('# Schema change impact: ' + (meta.schemaPath || ''));
   lines.push('');
-  lines.push('The report changes nothing — writes happen only once you approve them (DECISIONS §28).');
+  lines.push('The report changes nothing — writes happen only once you approve them.');
   lines.push('');
   lines.push('## Schema changes');
   lines.push('');

@@ -217,8 +217,6 @@ function resultLabel(model) {
   return n + ' ' + nls.plural(table.kind === 'collection' ? 'plural.field' : 'plural.column', n);
 }
 
-// The folder settings, read for one workspace folder (folder-level values
-// win over workspace and user ones, as VS Code resolves them).
 function folderSettings(folder) {
   const config = vscode.workspace.getConfiguration('dbPlayground', folder ? folder.uri : undefined);
   return { modelFolder: config.get('modelFolder', ''), migrationFolder: config.get('migrationFolder', '') };

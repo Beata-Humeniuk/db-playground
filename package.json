@@ -2,13 +2,17 @@
   "name": "db-playground",
   "displayName": "DB Playground",
   "description": "%description%",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "publisher": "beatahumeniuk",
   "icon": "icon.png",
   "license": "MIT",
   "repository": {
     "type": "git",
     "url": "https://github.com/Beata-Humeniuk/db-playground.git"
+  },
+  "homepage": "https://github.com/Beata-Humeniuk/db-playground#readme",
+  "bugs": {
+    "url": "https://github.com/Beata-Humeniuk/db-playground/issues"
   },
   "engines": {
     "vscode": "^1.80.0"
@@ -25,6 +29,11 @@
     "markdown",
     "documentation"
   ],
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": true
+    }
+  },
   "main": "./out/extension.js",
   "activationEvents": [],
   "contributes": {
@@ -106,9 +115,5 @@
   "devDependencies": {
     "@vscode/vsce": "3.9.2",
     "esbuild": "^0.21.5"
-  },
-  "homepage": "https://github.com/Beata-Humeniuk/db-playground#readme",
-  "bugs": {
-    "url": "https://github.com/Beata-Humeniuk/db-playground/issues"
   }
 }

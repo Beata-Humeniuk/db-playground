@@ -1,0 +1,114 @@
+{
+  "name": "db-playground",
+  "displayName": "DB Playground",
+  "description": "%description%",
+  "version": "0.1.0",
+  "publisher": "beatahumeniuk",
+  "icon": "icon.png",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Beata-Humeniuk/db-playground.git"
+  },
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "keywords": [
+    "database",
+    "schema",
+    "sql",
+    "csv",
+    "mongodb",
+    "markdown",
+    "documentation"
+  ],
+  "main": "./out/extension.js",
+  "activationEvents": [],
+  "contributes": {
+    "configuration": {
+      "title": "DB Playground",
+      "properties": {
+        "dbPlayground.modelFolder": {
+          "type": "string",
+          "default": "",
+          "markdownDescription": "%config.modelFolder.description%"
+        },
+        "dbPlayground.migrationFolder": {
+          "type": "string",
+          "default": "",
+          "markdownDescription": "%config.migrationFolder.description%"
+        }
+      }
+    },
+    "commands": [
+      {
+        "command": "dbPlayground.describe",
+        "title": "%command.describe.title%",
+        "category": "DB Playground"
+      },
+      {
+        "command": "dbPlayground.design",
+        "title": "%command.design.title%",
+        "category": "DB Playground"
+      },
+      {
+        "command": "dbPlayground.compareSchema",
+        "title": "%command.compareSchema.title%",
+        "category": "DB Playground"
+      }
+    ],
+    "submenus": [
+      {
+        "id": "dbPlayground.contextMenu",
+        "label": "DB Playground"
+      }
+    ],
+    "menus": {
+      "editor/context": [
+        {
+          "submenu": "dbPlayground.contextMenu",
+          "when": "resourceExtname =~ /\\.(sql|csv|tsv|json|ndjson|jsonl)$/i",
+          "group": "1_modification"
+        }
+      ],
+      "explorer/context": [
+        {
+          "submenu": "dbPlayground.contextMenu",
+          "when": "resourceExtname =~ /\\.(sql|csv|tsv|json|ndjson|jsonl)$/i",
+          "group": "7_modification"
+        }
+      ],
+      "dbPlayground.contextMenu": [
+        {
+          "command": "dbPlayground.describe",
+          "when": "resourceExtname =~ /\\.(sql|csv|tsv|json|ndjson|jsonl)$/i"
+        },
+        {
+          "command": "dbPlayground.design",
+          "when": "resourceExtname =~ /\\.(sql|csv|tsv|json|ndjson|jsonl)$/i"
+        },
+        {
+          "command": "dbPlayground.compareSchema",
+          "when": "resourceExtname =~ /\\.(sql|csv|tsv|json|ndjson|jsonl)$/i"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "build": "esbuild src/extension.js --bundle --outfile=out/extension.js --external:vscode --format=cjs --platform=node --minify --charset=utf8",
+    "vscode:prepublish": "npm run build",
+    "test": "node test/sql-test.js && node test/csv-test.js && node test/json-test.js && node test/doc-shape-test.js && node test/md-test.js && node test/diff-alter-test.js && node test/select-test.js && node test/schema-json-test.js && node test/schema-impact-test.js && node test/nls-test.js && node test/designer-smoke.js && node test/designer-render-test.js && node test/confluence-binding-test.js && node test/write-if-changed-test.js && node test/folders-test.js",
+    "package": "npm run build && vsce package --no-dependencies"
+  },
+  "devDependencies": {
+    "@vscode/vsce": "3.9.2",
+    "esbuild": "^0.21.5"
+  },
+  "homepage": "https://github.com/Beata-Humeniuk/db-playground#readme",
+  "bugs": {
+    "url": "https://github.com/Beata-Humeniuk/db-playground/issues"
+  }
+}

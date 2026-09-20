@@ -1,0 +1,13 @@
+.git/**
+.github/**
+.claude/**
+.vscode/**
+src/**
+test/**
+node_modules/**
+*.vsix
+**/*.map
+.gitignore
+package-lock.json
+SECURITY.md
+**/.DS_Store

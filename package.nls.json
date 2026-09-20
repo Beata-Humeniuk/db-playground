@@ -1,0 +1,8 @@
+{
+  "description": "Database schema from a large SQL dump, a CSV/TSV file or a MongoDB JSON export: a readable Markdown description with an ER diagram, a schema designer generating only the changes (ALTER / mongosh script) for the chosen database (PostgreSQL, MySQL/MariaDB, Oracle, SQL Server, MongoDB), and click-together SELECT queries. All local, no network.",
+  "command.describe.title": "Describe a database schema",
+  "command.design.title": "Schema designer (changes and queries)",
+  "command.compareSchema.title": "Compare schema with the tree version (impact report)",
+  "config.modelFolder.description": "Workspace-relative folder for the model: the Markdown description, the full CREATE script and the `.schema.json` file. Empty (default) = `<project>-spec/db/model`.",
+  "config.migrationFolder.description": "Workspace-relative folder for change scripts from the designer. Empty (default) = `<project>-spec/db/migration`."
+}

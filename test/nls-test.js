@@ -39,10 +39,11 @@ const fs = require('fs');
 const path = require('path');
 const root = path.join(__dirname, '..');
 const POLISH = /[ąćęłńóśźżĄĆĘŁŃÓŚŹŻ]/;
-for (const file of fs.readdirSync(path.join(root, 'src'))) {
-  if (!file.endsWith('.js')) continue;
-  const text = fs.readFileSync(path.join(root, 'src', file), 'utf8');
-  assert(!POLISH.test(text), 'src/' + file + ' holds no Polish text');
+for (const dir of ['src', 'media']) {
+  for (const file of fs.readdirSync(path.join(root, dir))) {
+    const text = fs.readFileSync(path.join(root, dir, file), 'utf8');
+    assert(!POLISH.test(text), dir + '/' + file + ' holds no Polish text');
+  }
 }
 
 const manifest = fs.readFileSync(path.join(root, 'package.json'), 'utf8');

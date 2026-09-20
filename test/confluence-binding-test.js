@@ -7,7 +7,7 @@ const binding = confluenceBinding(published);
 assert(binding.length === 3 && binding[0] === 'confluence:', 'binding lifted out of a published document');
 assert(binding.indexOf('type: contract') < 0, 'document keys are not mistaken for the binding');
 assert(confluenceBinding('---\ntype: contract\n---\n\n# X').length === 0, 'never published: no binding');
-assert(confluenceBinding('# X bez frontmattera').length === 0, 'no frontmatter: no binding');
+assert(confluenceBinding('# X without frontmatter').length === 0, 'no frontmatter: no binding');
 
 const regenerated = '---\ntype: contract\nmanaged: true\n---\n\n# Contract\n';
 const restored = withConfluenceBinding(regenerated, binding);

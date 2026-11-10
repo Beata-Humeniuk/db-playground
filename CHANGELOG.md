@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.0.2] - 2026-11-10
+
+- The 1.0.1 changes below, published to the Marketplace (1.0.1 was released on
+  GitHub only).
+
 ## [1.0.1] - 2026-11-10
 
 - **Describe a database schema** writes the description and

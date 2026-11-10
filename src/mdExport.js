@@ -305,9 +305,27 @@ function relationsSection(model) {
   return lines;
 }
 
+// What the description is called: the database schema the SQL itself names
+// (`offer.ACCOUNT` → offer) — not the folder the file lies in, which is the
+// documented service's and says nothing about its database. Without a
+// schema in the SQL, the file's own name.
+function describedName(model, source) {
+  if (model.sourceFormat === 'sql') {
+    const schemas = [];
+    for (const t of model.tables || []) {
+      const at = String(t.name || '').lastIndexOf('.');
+      const schema = at > 0 ? t.name.slice(0, at) : '';
+      if (schema && schemas.indexOf(schema) < 0) schemas.push(schema);
+    }
+    if (schemas.length) return schemas.join(', ');
+  }
+  const file = String(source || '').split(/[\\/]/).pop().replace(/\.[^.]+$/, '');
+  return file || 'schema';
+}
+
 function modelToMarkdown(model, opts = {}) {
   const source = opts.source || '';
-  const name = opts.name || source.replace(/\.[^.]+$/, '') || 'schema';
+  const name = opts.name || describedName(model, source);
   const date = opts.date || new Date().toISOString().slice(0, 10);
   const voc = vocabulary(model);
   const lines = [];

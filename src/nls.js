@@ -17,7 +17,7 @@ const EN = {
   'error.jsonUnparsable': 'the file could not be parsed as JSON or NDJSON',
   'progress.readingFile': 'Reading {file}…',
   'info.stateLoaded': 'Loaded a saved design: {file}. Delete this file to start over.',
-  'info.describeReady': 'Schema description ready ({summary}). Save as {path}?',
+  'info.described': 'Schema described ({summary}): {path} and {schema}',
   'info.saved': 'Saved: {path}',
   'warn.fileExists': 'File {path} already exists. Overwrite?',
   'action.save': 'Save',

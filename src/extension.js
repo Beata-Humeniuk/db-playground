@@ -46,9 +46,7 @@ async function describeCommand(uri) {
         : path.basename(fsPath),
       generator: 'db-playground@' + extensionVersion
     });
-    const doc = await vscode.workspace.openTextDocument({ language: 'markdown', content: markdown });
-    await vscode.window.showTextDocument(doc, { preview: false });
-    await offerSave(fileUri, markdown, model);
+    await saveDescription(fileUri, markdown, model);
   } catch (err) {
     vscode.window.showErrorMessage(nls.t('error.describeFailed', { error: err && err.message ? err.message : String(err) }));
   }
@@ -231,7 +229,12 @@ function savePlan(projectName, settings) {
   return { markdownDir: folders.modelDir, schemaDir: folders.modelDir };
 }
 
-async function offerSave(sourceUri, markdown, model) {
+// The description and the schema JSON are written at once, side by side in
+// the model folder: a description saved by hand from an unsaved tab (Ctrl+S)
+// or a missed "Save" notification left the Markdown without its
+// .schema.json, which Logic Spec reads. Only overwriting an existing
+// description asks first; declined, the description opens unsaved.
+async function saveDescription(sourceUri, markdown, model) {
   const folder = vscode.workspace.getWorkspaceFolder(sourceUri);
   const plan = folder
     ? savePlan(path.basename(folder.uri.fsPath), folderSettings(folder))
@@ -244,27 +247,8 @@ async function offerSave(sourceUri, markdown, model) {
   const target = vscode.Uri.joinPath(targetDir, fileName);
   const shownPath = folder ? plan.markdownDir + '/' + fileName : fileName;
 
-  const saveAction = nls.t('action.save');
-  const pick = await vscode.window.showInformationMessage(
-    nls.t('info.describeReady', { summary: resultLabel(model), path: shownPath }),
-    saveAction
-  );
-  if (pick !== saveAction) return;
-
-  let exists = true;
-  try {
-    await vscode.workspace.fs.stat(target);
-  } catch (err) {
-    exists = false;
-  }
-  if (exists) {
-    const overwriteAction = nls.t('action.overwrite');
-    const confirm = await vscode.window.showWarningMessage(
-      nls.t('warn.fileExists', { path: shownPath }), overwriteAction);
-    if (confirm !== overwriteAction) return;
-  }
-  await vscode.workspace.fs.createDirectory(targetDir);
-  await writeUnlessUnchanged(vscode, target, await keepConfluenceBinding(vscode, target, markdown));
+  // The JSON first: Logic Spec reads it, and it is data, rewritten as the
+  // designer's save rewrites it; only the description may hold edits.
   const { toEditable } = require('./schemaEdit');
   const { editableToJson } = require('./schemaJson');
   const editable = toEditable(model);
@@ -277,9 +261,29 @@ async function offerSave(sourceUri, markdown, model) {
       : path.basename(sourceUri.fsPath),
     dialect: editable.dialect
   }), null, 2) + '\n');
+  const schemaShown = folder ? plan.schemaDir + '/' + base + '.schema.json' : base + '.schema.json';
+  let exists = true;
+  try {
+    await vscode.workspace.fs.stat(target);
+  } catch (err) {
+    exists = false;
+  }
+  if (exists) {
+    const overwriteAction = nls.t('action.overwrite');
+    const confirm = await vscode.window.showWarningMessage(
+      nls.t('warn.fileExists', { path: shownPath }), overwriteAction);
+    if (confirm !== overwriteAction) {
+      const draft = await vscode.workspace.openTextDocument({ language: 'markdown', content: markdown });
+      await vscode.window.showTextDocument(draft, { preview: false });
+      vscode.window.showInformationMessage(nls.t('info.saved', { path: schemaShown }));
+      return;
+    }
+  }
+  await vscode.workspace.fs.createDirectory(targetDir);
+  await writeUnlessUnchanged(vscode, target, await keepConfluenceBinding(vscode, target, markdown));
   const opened = await vscode.workspace.openTextDocument(target);
   await vscode.window.showTextDocument(opened, { preview: false });
-  vscode.window.showInformationMessage(nls.t('info.saved', { path: shownPath }));
+  vscode.window.showInformationMessage(nls.t('info.described', { summary: resultLabel(model), path: shownPath, schema: schemaShown }));
 }
 
 async function compareSchemaCommand(uri) {

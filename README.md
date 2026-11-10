@@ -28,9 +28,10 @@ in the Command Palette.
 
 ### Describe a database schema
 
-Opens a Markdown description in an unsaved editor tab. Choose **Save** in the
-notification to write `<name>-schema.md` and `<name>.schema.json` to the model
-folder. `<name>` is the source filename without its extension.
+Writes `<name>-schema.md` and `<name>.schema.json` to the model folder at
+once and opens the description. `<name>` is the source filename without its
+extension. If the description already exists, you are asked before it is
+overwritten; the `.schema.json` is written either way.
 
 The description includes tables or collections, their fields and available
 metadata. Foreign-key relations and nested document structures include Mermaid

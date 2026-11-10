@@ -67,3 +67,12 @@ assert(nestedMd.includes('| `tags[]` | list: string |'), 'a list of scalars is o
 assert(!/\| `originalOrder\.product\.code`/.test(nestedMd), 'no dotted paths in the field tables');
 
 console.log('md-test OK');
+
+// The title is the database schema the SQL names, never the folder path.
+{
+  const qualified = modelToMarkdown(parseSqlText('CREATE TABLE offer."ACCOUNT" ("ID" bigint);'), { source: 'svc-spec/db/db.sql', date: '2026-11-10' });
+  const plain = modelToMarkdown(parseSqlText('CREATE TABLE "ACCOUNT" ("ID" bigint);'), { source: 'svc-spec/db/db.sql', date: '2026-11-10' });
+  assert(qualified.includes('# Database schema: offer\n'), 'schema named in the SQL is the title');
+  assert(plain.includes('# Database schema: db\n'), 'without one, the file name, not its path');
+  console.log('OK: title from the schema, not the path');
+}

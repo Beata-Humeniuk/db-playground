@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.0.1] - 2026-11-10
+
+- **Describe a database schema** writes the description and
+  `<name>.schema.json` at once. Before, both waited for **Save** in a
+  notification, and a description saved from its unsaved tab had no JSON.
+- Describing again when the description already exists writes the JSON even
+  if you keep your description.
+- The description is titled with the database schema the SQL names
+  (`offer.ACCOUNT` → `offer`), or the file's name — no longer its folder path.
+
 ## [1.0.0] - 2026-09-20
 
 First public release.

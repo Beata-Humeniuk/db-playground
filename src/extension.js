@@ -19,7 +19,8 @@ function activate(context) {
   context.subscriptions.push(
     vscode.commands.registerCommand('dbPlayground.describe', describeCommand),
     vscode.commands.registerCommand('dbPlayground.design', designCommand),
-    vscode.commands.registerCommand('dbPlayground.compareSchema', compareSchemaCommand)
+    vscode.commands.registerCommand('dbPlayground.compareSchema', compareSchemaCommand),
+    vscode.commands.registerCommand('dbPlayground.compareWithDatabase', compareWithDatabaseCommand)
   );
 }
 
@@ -348,6 +349,128 @@ async function compareSchemaCommand(uri) {
     }
   } catch (err) {
     vscode.window.showErrorMessage(nls.t('error.compareFailed', { error: err && err.message ? err.message : String(err) }));
+  }
+}
+
+// The model is what the project says the database looks like: the designer's
+// latest edits, the stored .schema.json, or the source file itself. The other
+// side is a schema-only export from the live database; the extension never
+// connects to one.
+async function modelCandidates(fileUri) {
+  const { parseSchemaJson, editableToJson } = require('./schemaJson');
+  const out = [];
+  const fsPath = fileUri.fsPath;
+  const base = path.basename(fsPath).replace(STATE_FILE, '').replace(SUPPORTED, '');
+  const stateUri = STATE_FILE.test(fsPath) ? fileUri : vscode.Uri.file(fsPath.replace(SUPPORTED, '') + STATE_SUFFIX);
+  if (await existingState(stateUri)) {
+    out.push({
+      label: nls.t('drift.modelDesigner'), description: path.basename(stateUri.fsPath), shown: path.basename(stateUri.fsPath),
+      load: async () => {
+        const state = await readState(stateUri);
+        return editableToJson(state.schema, { source: state.source, dialect: state.dialect });
+      }
+    });
+  }
+  const folder = vscode.workspace.getWorkspaceFolder(fileUri);
+  if (folder) {
+    const folders = workspaceFolders(folder);
+    const schemaUri = vscode.Uri.joinPath(folder.uri, folders.modelDir, base + '.schema.json');
+    let text = null;
+    try {
+      text = Buffer.from(await vscode.workspace.fs.readFile(schemaUri)).toString('utf8');
+    } catch (e) { }
+    const json = text === null ? null : parseSchemaJson(text);
+    if (json) {
+      const shown = folders.modelDir + '/' + base + '.schema.json';
+      out.push({ label: nls.t('drift.modelStored'), description: shown, shown, load: async () => json });
+    }
+  }
+  const format = formatOf(fsPath);
+  if (format && !STATE_FILE.test(fsPath)) {
+    out.push({
+      label: nls.t('drift.modelSource'), description: path.basename(fsPath), shown: path.basename(fsPath),
+      inferred: format !== 'sql',
+      load: async () => fileToSchemaJson(fileUri, format)
+    });
+  }
+  return out;
+}
+
+async function fileToSchemaJson(fileUri, format) {
+  const { editableToJson } = require('./schemaJson');
+  const { toEditable } = require('./schemaEdit');
+  const model = await vscode.window.withProgress(
+    { location: vscode.ProgressLocation.Notification, title: nls.t('progress.readingFile', { file: path.basename(fileUri.fsPath) }) },
+    () => buildModel(fileUri.fsPath, format)
+  );
+  const editable = toEditable(model);
+  return editableToJson(editable.schema, { source: path.basename(fileUri.fsPath), dialect: editable.dialect });
+}
+
+async function openMarkdown(content) {
+  const doc = await vscode.workspace.openTextDocument({ language: 'markdown', content });
+  await vscode.window.showTextDocument(doc, { viewColumn: vscode.ViewColumn.Beside, preview: false });
+}
+
+async function compareWithDatabaseCommand(uri) {
+  try {
+    const { schemaDrift, driftCount, driftReportMd, dumpHelpMd } = require('./schemaDrift');
+    const fileUri = uri instanceof vscode.Uri ? uri : await pickSource();
+    if (!fileUri) return;
+    const candidates = await modelCandidates(fileUri);
+    if (!candidates.length) {
+      vscode.window.showErrorMessage(nls.t('error.unsupportedFileType'));
+      return;
+    }
+    const modelPick = candidates.length === 1 ? candidates[0] : await vscode.window.showQuickPick(candidates, {
+      placeHolder: nls.t('drift.pickModel'), ignoreFocusOut: true
+    });
+    if (!modelPick) return;
+
+    const chooseItem = { label: nls.t('drift.chooseDump'), detail: nls.t('drift.chooseDumpDetail'), choose: true };
+    const helpItem = { label: nls.t('drift.howToDump'), detail: nls.t('drift.howToDumpDetail') };
+    const how = await vscode.window.showQuickPick([chooseItem, helpItem], {
+      placeHolder: nls.t('drift.pickDatabase'), ignoreFocusOut: true
+    });
+    if (!how) return;
+    if (!how.choose) {
+      await openMarkdown(dumpHelpMd());
+      return;
+    }
+    const picked = await vscode.window.showOpenDialog({
+      canSelectMany: false,
+      openLabel: nls.t('drift.openLabel'),
+      defaultUri: vscode.Uri.file(path.dirname(fileUri.fsPath)),
+      filters: { [nls.t('dialog.dataSources')]: ['sql', 'csv', 'tsv', 'json', 'ndjson', 'jsonl'] },
+    });
+    const dumpUri = picked && picked[0];
+    if (!dumpUri) return;
+    const dumpFormat = formatOf(dumpUri.fsPath);
+    if (!dumpFormat) {
+      vscode.window.showErrorMessage(nls.t('error.unsupportedFileType'));
+      return;
+    }
+
+    const modelJson = await modelPick.load();
+    const databaseJson = await fileToSchemaJson(dumpUri, dumpFormat);
+    const drift = schemaDrift(modelJson, databaseJson);
+    const shownDump = vscode.workspace.asRelativePath(dumpUri, false);
+    await openMarkdown(driftReportMd(drift, {
+      title: path.basename(fileUri.fsPath).replace(STATE_FILE, '').replace(SUPPORTED, ''),
+      modelPath: modelPick.shown,
+      databasePath: shownDump,
+      inferred: Boolean(modelPick.inferred) || dumpFormat !== 'sql',
+      generator: 'db-playground@' + extensionVersion,
+      generatedAt: new Date().toISOString().slice(0, 10)
+    }));
+    const n = driftCount(drift);
+    if (n) {
+      vscode.window.showWarningMessage(nls.t('drift.found', { count: n, discrepancies: nls.plural('plural.discrepancy', n) }));
+    } else {
+      vscode.window.showInformationMessage(nls.t('drift.none'));
+    }
+  } catch (err) {
+    vscode.window.showErrorMessage(nls.t('error.driftFailed', { error: err && err.message ? err.message : String(err) }));
   }
 }
 

@@ -1,5 +1,14 @@
 # Changelog
 
+## [Unreleased]
+
+- **Compare the model with a database (drift report)**: compares the model
+  (designer edits, `.schema.json` or the source) with a schema-only export of
+  a live database and reports missing and extra tables and columns, type,
+  NULL / NOT NULL and default differences, primary keys, indexes and foreign
+  keys. Includes the export commands for PostgreSQL, MySQL/MariaDB, SQL
+  Server, Oracle and MongoDB. Still no network access.
+
 ## [1.0.2] - 2026-11-10
 
 - The 1.0.1 changes below, published to the Marketplace (1.0.1 was released on

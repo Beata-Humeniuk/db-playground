@@ -67,6 +67,11 @@
         "command": "dbPlayground.compareSchema",
         "title": "%command.compareSchema.title%",
         "category": "DB Playground"
+      },
+      {
+        "command": "dbPlayground.compareWithDatabase",
+        "title": "%command.compareWithDatabase.title%",
+        "category": "DB Playground"
       }
     ],
     "submenus": [
@@ -102,6 +107,10 @@
         {
           "command": "dbPlayground.compareSchema",
           "when": "resourceExtname =~ /\\.(sql|csv|tsv|json|ndjson|jsonl)$/i"
+        },
+        {
+          "command": "dbPlayground.compareWithDatabase",
+          "when": "resourceExtname =~ /\\.(sql|csv|tsv|json|ndjson|jsonl)$/i"
         }
       ]
     }
@@ -109,7 +118,7 @@
   "scripts": {
     "build": "esbuild src/extension.js --bundle --outfile=out/extension.js --external:vscode --format=cjs --platform=node --minify --charset=utf8",
     "vscode:prepublish": "npm run build",
-    "test": "node test/sql-test.js && node test/csv-test.js && node test/json-test.js && node test/doc-shape-test.js && node test/md-test.js && node test/diff-alter-test.js && node test/select-test.js && node test/schema-json-test.js && node test/schema-impact-test.js && node test/nls-test.js && node test/designer-smoke.js && node test/designer-render-test.js && node test/confluence-binding-test.js && node test/write-if-changed-test.js && node test/folders-test.js && node test/describe-save-test.js",
+    "test": "node test/sql-test.js && node test/csv-test.js && node test/json-test.js && node test/doc-shape-test.js && node test/md-test.js && node test/diff-alter-test.js && node test/select-test.js && node test/schema-json-test.js && node test/schema-impact-test.js && node test/nls-test.js && node test/designer-smoke.js && node test/designer-render-test.js && node test/confluence-binding-test.js && node test/write-if-changed-test.js && node test/folders-test.js && node test/describe-save-test.js && node test/schema-drift-test.js",
     "package": "npm run build && vsce package --no-dependencies"
   },
   "devDependencies": {

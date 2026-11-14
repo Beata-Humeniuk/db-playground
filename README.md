@@ -69,6 +69,34 @@ and whether fields are required. It does not compare indexes, keys, defaults
 or relations. Suggested renames need confirmation. The stored schema is updated
 only after you choose **Save**.
 
+### Compare the model with a database (drift report)
+
+Finds discrepancies between what the project describes and a live database.
+The extension does not connect to the database: export its structure first
+(the command offers **How do I export the schema from my database?** with
+ready commands), for example:
+
+```sh
+pg_dump --schema-only --no-owner --no-privileges -h HOST -U USER -d DATABASE -f db-schema.sql
+mysqldump --no-data --skip-comments -h HOST -u USER -p DATABASE > db-schema.sql
+```
+
+Right-click the model's source, choose **Compare the model with a database**,
+pick which model to use (the designer's latest edits, the stored
+`.schema.json` or the source file) and then the export. The Markdown report
+lists:
+
+- tables and columns in the model but missing in the database;
+- columns defined differently: type, NULL / NOT NULL, default; primary keys;
+- indexes and foreign keys present on only one side;
+- tables and columns found only in the database.
+
+Type spellings are unified (`int4` = `integer`, `character varying` =
+`varchar`), names ignore case and the `public` / `dbo` prefix, and indexes are
+matched by columns, not names. MongoDB collections can be compared with a
+`mongoexport` sample; their fields are inferred from the documents. Nothing is
+changed or saved.
+
 ## Saving files
 
 In the designer, **Open as file** saves schema scripts and updates

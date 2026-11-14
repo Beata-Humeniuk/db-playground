@@ -38,6 +38,7 @@ const EN = {
   'plural.column': ['column', 'columns'],
   'plural.change': ['change', 'changes'],
   'plural.reference': ['reference', 'references'],
+  'plural.discrepancy': ['discrepancy', 'discrepancies'],
 
   'op.eq': 'equals',
   'op.ne': 'differs from',
@@ -210,6 +211,19 @@ const EN = {
   'compare.saveAsk': 'Save the new schema version to {path}?',
   'impact.substituteAsk': 'Replace {count} {references} to renamed tables/columns in flow steps? Every replacement will be listed in a report.',
   'action.substitute': 'Replace references',
+  'drift.modelDesigner': 'Model from the designer (latest edits)',
+  'drift.modelStored': 'Stored schema (.schema.json)',
+  'drift.modelSource': 'Source file as it is',
+  'drift.pickModel': 'Which version of the model should the database be compared with?',
+  'drift.pickDatabase': 'The live database: pick a schema export from it',
+  'drift.chooseDump': 'Choose a database export…',
+  'drift.chooseDumpDetail': 'A schema-only dump (pg_dump --schema-only, mysqldump --no-data) or a mongoexport sample',
+  'drift.howToDump': 'How do I export the schema from my database?',
+  'drift.howToDumpDetail': 'Opens the commands for PostgreSQL, MySQL/MariaDB, SQL Server, Oracle and MongoDB',
+  'drift.openLabel': 'Compare with this export',
+  'drift.found': 'Found {count} {discrepancies} between the model and the database. Details in the report.',
+  'drift.none': 'The database matches the model — no discrepancies.',
+  'error.driftFailed': 'Comparison with the database failed: {error}',
   'info.substituted': 'References replaced in: {packages}. Details in the report.',
 };
 

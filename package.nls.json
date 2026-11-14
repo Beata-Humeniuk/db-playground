@@ -3,6 +3,7 @@
   "command.describe.title": "Describe a database schema",
   "command.design.title": "Schema designer (changes and queries)",
   "command.compareSchema.title": "Compare schema with the tree version (impact report)",
+  "command.compareWithDatabase.title": "Compare the model with a database (drift report)",
   "config.modelFolder.description": "Workspace-relative folder for the model: the Markdown description, the full CREATE script and the `.schema.json` file. Empty (default) = `<project>-spec/db/model`.",
   "config.migrationFolder.description": "Workspace-relative folder for change scripts from the designer. Empty (default) = `<project>-spec/db/migration`."
 }
